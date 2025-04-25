@@ -127,4 +127,7 @@
     <java-symbol type="string" name="megabitspersecond_short" />
     <java-symbol type="string" name="kilobytespersecond_short" />
     <java-symbol type="string" name="megabytespersecond_short" />
+
+    <!-- GameSpace -->
+    <java-symbol type="string" name="gamespace_new_game_added" />
 </resources>
