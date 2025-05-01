@@ -2336,7 +2336,6 @@ public final class GameManagerService extends IGameManagerService.Stub {
             final boolean isNotGame = Arrays.stream(packages).noneMatch(
                     p -> isPackageGame(p, userId));
             synchronized (mUidObserverLock) {
-                setGameAffinity(uid, true);
                 if (isNotGame) {
                     if (!mGameForegroundUids.isEmpty() && mNonGameForegroundUids.isEmpty()) {
                         Slog.v(TAG, "Game power mode OFF (first non-game in foreground)");
@@ -2349,6 +2348,7 @@ public final class GameManagerService extends IGameManagerService.Stub {
                     Slog.v(TAG, "Game power mode ON (first game in foreground)");
                     mPowerManagerInternal.setPowerMode(Mode.GAME, true);
                     boostGameService(true);
+                    setGameAffinity(uid);
                 }
                 final boolean isGameDefaultFrameRateDisabled =
                         mSysProps.getBoolean(
@@ -2361,7 +2361,6 @@ public final class GameManagerService extends IGameManagerService.Stub {
 
         private void handleUidMovedOffTop(int uid) {
             synchronized (mUidObserverLock) {
-                setGameAffinity(uid, false);
                 if (mGameForegroundUids.contains(uid)) {
                     mGameForegroundUids.remove(uid);
                     if (mGameForegroundUids.isEmpty() && mNonGameForegroundUids.isEmpty()) {
@@ -2375,18 +2374,17 @@ public final class GameManagerService extends IGameManagerService.Stub {
                         Slog.v(TAG, "Game power mode ON (only games in foreground)");
                         mPowerManagerInternal.setPowerMode(Mode.GAME, true);
                         boostGameService(true);
+                        setGameAffinity(uid);
                     }
                 }
             }
         }
 
-        private void setGameAffinity(int uid, boolean boosted) {
+        private void setGameAffinity(int uid) {
             Map<String, Integer> packagePidMap = getRunningGamePidsPerPackage(uid);
             if (packagePidMap.isEmpty()) {
-                Slog.v(TAG, "No running game process found for UID=" + uid);
                 return;
             }
-
             for (Map.Entry<String, Integer> entry : packagePidMap.entrySet()) {
                 int pid = entry.getValue();
                 String packageName = entry.getKey();
@@ -2395,6 +2393,7 @@ public final class GameManagerService extends IGameManagerService.Stub {
                         ", UID=" + uid + ") to all cores");
             }
         }
+
         private Map<String, Integer> getRunningGamePidsPerPackage(int targetUid) {
             Map<String, Integer> packagePidMap = new HashMap<>();
             ActivityManager am = (ActivityManager) mContext.getSystemService(Context.ACTIVITY_SERVICE);
